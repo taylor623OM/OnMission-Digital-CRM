@@ -1,0 +1,6 @@
+{
+  "name": "onmission-crm",
+  "dependencies": {
+    "stripe": "^14.0.0"
+  }
+}
