@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnMission Digital CRM</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+            padding-bottom: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            bottom: -12px;
+            width: 2px;
+            background: #e5e7eb;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #DC7746;
+        }
+        .card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .sync-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+        }
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .sync-dot.connected {
+            background: #10b981;
+        }
+        .sync-dot.disconnected {
+            background: #ef4444;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_9xIPVCKd-BZOtEMyPxhzHou1m97F55U",
+            authDomain: "onmission-crm-376c4.firebaseapp.com",
+            projectId: "onmission-crm-376c4",
+            storageBucket: "onmission-crm-376c4.firebasestorage.app",
+            messagingSenderId: "312236249225",
+            appId: "1:312236249225:web:118ca7efee43b80de37658"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Firebase helper functions
+        const FirebaseService = {
+            subscribeToContacts(callback) {
+                return db.collection('contacts').onSnapshot(snapshot => {
+                    const contacts = [];
+                    snapshot.forEach(doc => {
+                        contacts.push({ id: doc.id, ...doc.data() });
+                    });
+                    callback(contacts);
+                });
+            },
+
+            async addContact(contact) {
+                try {
+                    const docRef = await db.collection('contacts').add({
+                        ...contact,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    return docRef.id;
+                } catch (error) {
+                    console.error("Error adding contact:", error);
+                    throw error;
+                }
+            },
+
+            async updateContact(id, updates) {
+                try {
+                    await db.collection('contacts').doc(id).update({
+                        ...updates,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch (error) {
+                    console.error("Error updating contact:", error);
+                    throw error;
+                }
+            },
+
+            async deleteContact(id) {
+                try {
+                    await db.collection('contacts').doc(id).delete();
+                } catch (error) {
+                    console.error("Error deleting contact:", error);
+                    throw error;
+                }
+            },
+
+            async addHistory(contactId, historyItem) {
+                try {
+                    const contact = await db.collection('contacts').doc(contactId).get();
+                    if (contact.exists) {
+                        const currentHistory = contact.data().history || [];
+                        await db.collection('contacts').doc(contactId).update({
+                            history: [
+                                { ...historyItem, id: Date.now(), date: new Date().toISOString().split('T')[0] },
+                                ...currentHistory
+                            ],
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error adding history:", error);
+                    throw error;
+                }
+            }
+        };
+
+        function OnMissionCRM() {
+            const [contacts, setContacts] = useState([]);
+            const [selectedContact, setSelectedContact] = useState(null);
+            const [showAddContact, setShowAddContact] = useState(false);
+            const [showAddHistory, setShowAddHistory] = useState(false);
+            const [view, setView] = useState('grid');
+            const [filterStatus, setFilterStatus] = useState('all');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [isConnected, setIsConnected] = useState(true);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const unsubscribe = FirebaseService.subscribeToContacts((updatedContacts) => {
+                    setContacts(updatedContacts);
+                    setLoading(false);
+                    setIsConnected(true);
+                });
+                
+                return () => {
+                    unsubscribe();
+                };
+            }, []);
+
+            useEffect(() => {
+                if (selectedContact) {
+                    const updated = contacts.find(c => c.id === selectedContact.id);
+                    if (updated) {
+                        setSelectedContact(updated);
+                    }
+                }
+            }, [contacts]);
+
+            const filteredContacts = contacts.filter(contact => {
+                const matchesSearch = contact.churchName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                    contact.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                    contact.email?.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesStatus = filterStatus === 'all' || contact.projectStatus === filterStatus;
+                return matchesSearch && matchesStatus;
+            });
+
+            const addContact = async (newContact) => {
+                try {
+                    await FirebaseService.addContact({
+                        ...newContact,
+                        history: []
+                    });
+                    setShowAddContact(false);
+                } catch (error) {
+                    alert('Error adding contact. Please try again.');
+                }
+            };
+
+            const updateContact = async (id, updatedData) => {
+                try {
+                    await FirebaseService.updateContact(id, updatedData);
+                } catch (error) {
+                    alert('Error updating contact. Please try again.');
+                }
+            };
+
+            const deleteContact = async (id) => {
+                if (confirm('Are you sure you want to delete this contact?')) {
+                    try {
+                        await FirebaseService.deleteContact(id);
+                        if (selectedContact && selectedContact.id === id) {
+                            setSelectedContact(null);
+                        }
+                    } catch (error) {
+                        alert('Error deleting contact. Please try again.');
+                    }
+                }
+            };
+
+            const addHistory = async (contactId, historyItem) => {
+                try {
+                    await FirebaseService.addHistory(contactId, historyItem);
+                    setShowAddHistory(false);
+                } catch (error) {
+                    alert('Error adding history. Please try again.');
+                }
+            };
+
+            const getStatusColor = (status) => {
+                const colors = {
+                    'Lead': 'bg-blue-100 text-blue-800',
+                    'Contacted': 'bg-yellow-100 text-yellow-800',
+                    'Proposal Sent': 'bg-purple-100 text-purple-800',
+                    'In Progress': 'bg-green-100 text-green-800',
+                    'Completed': 'bg-gray-100 text-gray-800',
+                    'On Hold': 'bg-red-100 text-red-800'
+                };
+                return colors[status] || 'bg-gray-100 text-gray-800';
+            };
+
+            const getHistoryIcon = (type) => {
+                const icons = {
+                    'call': 'fa-phone',
+                    'email': 'fa-envelope',
+                    'meeting': 'fa-users',
+                    'payment': 'fa-dollar-sign',
+                    'invoice': 'fa-file-invoice'
+                };
+                return icons[type] || 'fa-circle';
+            };
+
+            const exportToGoogleSheets = () => {
+                const headers = ['Church Name', 'Contact Name', 'Email', 'Phone', 'Address', 'State', 'Website', 'Status', 'Pricing', 'Contacted'];
+                const rows = contacts.map(c => [
+                    c.churchName,
+                    c.contactName,
+                    c.email,
+                    c.phone,
+                    c.address,
+                    c.state,
+                    c.websiteUrl,
+                    c.projectStatus,
+                    c.pricing,
+                    c.contacted ? 'Yes' : 'No'
+                ]);
+                
+                const csv = [headers, ...rows].map(row => row.map(cell => `"${cell || ''}"`).join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'onmission-contacts.csv';
+                a.click();
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-600 mx-auto mb-4"></div>
+                            <p className="text-gray-600">Loading your CRM...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    <div className="sync-indicator">
+                        <div className={`sync-dot ${isConnected ? 'connected' : 'disconnected'}`}></div>
+                        <span className="text-sm font-medium text-gray-700">
+                            {isConnected ? 'Live' : 'Offline'}
+                        </span>
+                    </div>
+
+                    <div className="gradient-bg text-white shadow-lg">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-3xl font-bold">OnMission Digital CRM</h1>
+                                    <p className="text-orange-100 mt-1">Church Website Projects • Real-Time Sync</p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={exportToGoogleSheets}
+                                        className="bg-white text-orange-600 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition flex items-center gap-2"
+                                    >
+                                        <i className="fas fa-download"></i>
+                                        Export to Sheets
+                                    </button>
+                                    <button
+                                        onClick={() => setShowAddContact(true)}
+                                        className="bg-white text-orange-600 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition flex items-center gap-2"
+                                    >
+                                        <i className="fas fa-plus"></i>
+                                        Add Contact
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                            <div className="flex flex-wrap gap-4 items-center justify-between">
+                                <div className="flex-1 min-w-[300px]">
+                                    <div className="relative">
+                                        <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                        <input
+                                            type="text"
+                                            placeholder="Search churches, contacts, or emails..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <select
+                                        value={filterStatus}
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                                    >
+                                        <option value="all">All Status</option>
+                                        <option value="Lead">Lead</option>
+                                        <option value="Contacted">Contacted</option>
+                                        <option value="Proposal Sent">Proposal Sent</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="On Hold">On Hold</option>
+                                    </select>
+                                    <button
+                                        onClick={() => setView(view === 'grid' ? 'table' : 'grid')}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    >
+                                        <i className={`fas fa-${view === 'grid' ? 'list' : 'th'}`}></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div className="bg-white rounded-lg shadow-sm p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-500 text-sm">Total Contacts</p>
+                                        <p className="text-2xl font-bold text-gray-900">{contacts.length}</p>
+                                    </div>
+                                    <div className="bg-orange-100 rounded-full p-3">
+                                        <i className="fas fa-church text-orange-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-lg shadow-sm p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-500 text-sm">Active Projects</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            {contacts.filter(c => c.projectStatus === 'In Progress').length}
+                                        </p>
+                                    </div>
+                                    <div className="bg-green-100 rounded-full p-3">
+                                        <i className="fas fa-tasks text-green-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-lg shadow-sm p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-500 text-sm">New Leads</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            {contacts.filter(c => c.projectStatus === 'Lead').length}
+                                        </p>
+                                    </div>
+                                    <div className="bg-blue-100 rounded-full p-3">
+                                        <i className="fas fa-star text-blue-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-lg shadow-sm p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-500 text-sm">Completed</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            {contacts.filter(c => c.projectStatus === 'Completed').length}
+                                        </p>
+                                    </div>
+                                    <div className="bg-gray-100 rounded-full p-3">
+                                        <i className="fas fa-check text-gray-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {contacts.length === 0 && (
+                            <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                                <div className="text-gray-400 mb-4">
+                                    <i className="fas fa-church text-6xl"></i>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Contacts Yet</h3>
+                                <p className="text-gray-600 mb-6">Get started by adding your first church contact!</p>
+                                <button
+                                    onClick={() => setShowAddContact(true)}
+                                    className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 transition"
+                                >
+                                    <i className="fas fa-plus mr-2"></i>
+                                    Add Your First Contact
+                                </button>
+                            </div>
+                        )}
+
+                        {contacts.length > 0 && (
+                            view === 'grid' ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {filteredContacts.map(contact => (
+                                        <div key={contact.id} className="bg-white rounded-lg shadow-sm p-6 card cursor-pointer" onClick={() => setSelectedContact(contact)}>
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{contact.churchName}</h3>
+                                                    <p className="text-sm text-gray-600">{contact.contactName}</p>
+                                                </div>
+                                                <span className={`status-badge ${getStatusColor(contact.projectStatus)}`}>
+                                                    {contact.projectStatus}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2 text-sm">
+                                                <div className="flex items-center text-gray-600">
+                                                    <i className="fas fa-envelope w-5"></i>
+                                                    <span className="ml-2">{contact.email}</span>
+                                                </div>
+                                                <div className="flex items-center text-gray-600">
+                                                    <i className="fas fa-phone w-5"></i>
+                                                    <span className="ml-2">{contact.phone}</span>
+                                                </div>
+                                                <div className="flex items-center text-gray-600">
+                                                    <i className="fas fa-map-marker-alt w-5"></i>
+                                                    <span className="ml-2">{contact.state}</span>
+                                                </div>
+                                                <div className="flex items-center text-gray-600">
+                                                    <i className="fas fa-dollar-sign w-5"></i>
+                                                    <span className="ml-2 font-semibold">{contact.pricing}</span>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                                                <span className={`text-xs font-medium ${contact.contacted ? 'text-green-600' : 'text-red-600'}`}>
+                                                    <i className={`fas fa-${contact.contacted ? 'check-circle' : 'times-circle'}`}></i>
+                                                    {contact.contacted ? ' Contacted' : ' Not Contacted'}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    {contact.history?.length || 0} activities
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Church</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pricing</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {filteredContacts.map(contact => (
+                                                <tr key={contact.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedContact(contact)}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{contact.churchName}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{contact.contactName}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{contact.email}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{contact.phone}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className={`status-badge ${getStatusColor(contact.projectStatus)}`}>
+                                                            {contact.projectStatus}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{contact.pricing}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )
+                        )}
+                    </div>
+
+                    {selectedContact && (
+                        <ContactDetailModal
+                            contact={selectedContact}
+                            onClose={() => setSelectedContact(null)}
+                            onUpdate={updateContact}
+                            onDelete={deleteContact}
+                            onAddHistory={() => setShowAddHistory(true)}
+                            getStatusColor={getStatusColor}
+                            getHistoryIcon={getHistoryIcon}
+                        />
+                    )}
+
+                    {showAddHistory && selectedContact && (
+                        <AddHistoryModal
+                            onClose={() => setShowAddHistory(false)}
+                            onAdd={(item) => addHistory(selectedContact.id, item)}
+                        />
+                    )}
+
+                    {showAddContact && (
+                        <AddContactModal
+                            onClose={() => setShowAddContact(false)}
+                            onAdd={addContact}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        function ContactDetailModal({ contact, onClose, onUpdate, onDelete, onAddHistory, getStatusColor, getHistoryIcon }) {
+            const [isEditing, setIsEditing] = useState(false);
+            const [editedContact, setEditedContact] = useState(contact);
+
+            const handleSave = () => {
+                onUpdate(contact.id, editedContact);
+                setIsEditing(false);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+                            <h2 className="text-2xl font-bold text-gray-900">{contact.churchName}</h2>
+                            <div className="flex gap-2">
+                                {!isEditing ? (
+                                    <>
+                                        <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                                            <i className="fas fa-edit mr-2"></i>Edit
+                                        </button>
+                                        <button onClick={() => onDelete(contact.id)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                                            <i className="fas fa-trash mr-2"></i>Delete
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                            <i className="fas fa-check mr-2"></i>Save
+                                        </button>
+                                        <button onClick={() => { setIsEditing(false); setEditedContact(contact); }} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                                            Cancel
+                                        </button>
+                                    </>
+                                )}
+                                <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-900">
+                                    <i className="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div>
+                                    <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={editedContact.contactName}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, contactName: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900">{contact.contactName}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="email"
+                                                    value={editedContact.email}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, email: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900">{contact.email}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="tel"
+                                                    value={editedContact.phone}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, phone: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900">{contact.phone}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={editedContact.address}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, address: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900">{contact.address}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={editedContact.state}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, state: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900">{contact.state}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-semibold mb-4">Project Details</h3>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={editedContact.websiteUrl}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, websiteUrl: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900">{contact.websiteUrl || 'Not provided'}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Project Status</label>
+                                            {isEditing ? (
+                                                <select
+                                                    value={editedContact.projectStatus}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, projectStatus: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                >
+                                                    <option>Lead</option>
+                                                    <option>Contacted</option>
+                                                    <option>Proposal Sent</option>
+                                                    <option>In Progress</option>
+                                                    <option>Completed</option>
+                                                    <option>On Hold</option>
+                                                </select>
+                                            ) : (
+                                                <span className={`status-badge ${getStatusColor(contact.projectStatus)}`}>
+                                                    {contact.projectStatus}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Pricing</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={editedContact.pricing}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, pricing: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900 font-semibold">{contact.pricing}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Contacted</label>
+                                            {isEditing ? (
+                                                <select
+                                                    value={editedContact.contacted}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, contacted: e.target.value === 'true' })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                >
+                                                    <option value="true">Yes</option>
+                                                    <option value="false">No</option>
+                                                </select>
+                                            ) : (
+                                                <span className={`text-sm font-medium ${contact.contacted ? 'text-green-600' : 'text-red-600'}`}>
+                                                    <i className={`fas fa-${contact.contacted ? 'check-circle' : 'times-circle'} mr-1`}></i>
+                                                    {contact.contacted ? 'Yes' : 'No'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-semibold">Contact History</h3>
+                                    <button
+                                        onClick={onAddHistory}
+                                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm"
+                                    >
+                                        <i className="fas fa-plus mr-2"></i>Add Activity
+                                    </button>
+                                </div>
+                                {contact.history && contact.history.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {contact.history.map(item => (
+                                            <div key={item.id} className="timeline-item">
+                                                <div className={`timeline-dot bg-${item.type === 'payment' ? 'green' : 'orange'}-500`}></div>
+                                                <div className="bg-gray-50 rounded-lg p-4">
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <i className={`fas ${getHistoryIcon(item.type)} text-orange-600`}></i>
+                                                            <span className="font-medium text-gray-900 capitalize">{item.type}</span>
+                                                            <span className="text-gray-500 text-sm">• {item.date}</span>
+                                                        </div>
+                                                        <span className="text-xs text-gray-500">{item.user}</span>
+                                                    </div>
+                                                    <p className="text-gray-700 text-sm">{item.note}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <i className="fas fa-inbox text-4xl mb-3"></i>
+                                        <p>No activity history yet</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function AddHistoryModal({ onClose, onAdd }) {
+            const [type, setType] = useState('call');
+            const [note, setNote] = useState('');
+            const [user, setUser] = useState('You');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (note.trim()) {
+                    onAdd({ type, note, user });
+                    onClose();
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+                    <div className="bg-white rounded-lg max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="text-2xl font-bold mb-4">Add Activity</h2>
+                        <form onSubmit={handleSubmit}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+                                    <select
+                                        value={type}
+                                        onChange={(e) => setType(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                    >
+                                        <option value="call">Phone Call</option>
+                                        <option value="email">Email</option>
+                                        <option value="meeting">Meeting</option>
+                                        <option value="payment">Payment Received</option>
+                                        <option value="invoice">Invoice Sent</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+                                    <input
+                                        type="text"
+                                        value={user}
+                                        onChange={(e) => setUser(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        placeholder="Who performed this activity?"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                    <textarea
+                                        value={note}
+                                        onChange={(e) => setNote(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        rows="4"
+                                        placeholder="What happened?"
+                                        required
+                                    ></textarea>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mt-6">
+                                <button type="submit" className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                                    Add Activity
+                                </button>
+                                <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        function AddContactModal({ onClose, onAdd }) {
+            const [formData, setFormData] = useState({
+                churchName: '',
+                contactName: '',
+                email: '',
+                phone: '',
+                address: '',
+                state: '',
+                websiteUrl: '',
+                projectStatus: 'Lead',
+                pricing: '',
+                contacted: false
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onAdd(formData);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="text-2xl font-bold mb-4">Add New Contact</h2>
+                        <form onSubmit={handleSubmit}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Church Name *</label>
+                                    <input
+                                        type="text"
+                                        value={formData.churchName}
+                                        onChange={(e) => setFormData({ ...formData, churchName: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name *</label>
+                                    <input
+                                        type="text"
+                                        value={formData.contactName}
+                                        onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                                    <input
+                                        type="tel"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                    <input
+                                        type="text"
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                                    <input
+                                        type="text"
+                                        value={formData.state}
+                                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        placeholder="TN"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                                    <input
+                                        type="text"
+                                        value={formData.websiteUrl}
+                                        onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Project Status</label>
+                                    <select
+                                        value={formData.projectStatus}
+                                        onChange={(e) => setFormData({ ...formData, projectStatus: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                    >
+                                        <option>Lead</option>
+                                        <option>Contacted</option>
+                                        <option>Proposal Sent</option>
+                                        <option>In Progress</option>
+                                        <option>Completed</option>
+                                        <option>On Hold</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Pricing</label>
+                                    <input
+                                        type="text"
+                                        value={formData.pricing}
+                                        onChange={(e) => setFormData({ ...formData, pricing: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        placeholder="$3,500"
+                                    />
+                                </div>
+                                <div className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.contacted}
+                                        onChange={(e) => setFormData({ ...formData, contacted: e.target.checked })}
+                                        className="w-4 h-4 text-orange-600 rounded"
+                                    />
+                                    <label className="ml-2 text-sm text-gray-700">Already contacted</label>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mt-6">
+                                <button type="submit" className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                                    Add Contact
+                                </button>
+                                <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<OnMissionCRM />, document.getElementById('root'));
+    </script>
+</body>
+</html>
