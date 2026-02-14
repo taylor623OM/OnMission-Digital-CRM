@@ -96,6 +96,29 @@
             justify-content: center;
             background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
         }
+        .quick-add-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
+            color: white;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 999;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .quick-add-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -413,7 +436,7 @@
                 const colors = {
                     'Lead': 'bg-blue-100 text-blue-800',
                     'Contacted': 'bg-yellow-100 text-yellow-800',
-                    'Proposal Sent': 'bg-purple-100 text-purple-800',
+                    'Waiting Info/Call': 'bg-purple-100 text-purple-800',
                     'In Progress': 'bg-green-100 text-green-800',
                     'Completed': 'bg-gray-100 text-gray-800',
                     'On Hold': 'bg-red-100 text-red-800'
@@ -469,6 +492,15 @@
 
             return (
                 <div className="min-h-screen bg-gray-50">
+                    {/* Quick Add Button */}
+                    <button 
+                        onClick={() => setShowAddContact(true)}
+                        className="quick-add-btn"
+                        title="Quick Add Contact"
+                    >
+                        <i className="fas fa-plus"></i>
+                    </button>
+
                     <div className="sync-indicator">
                         <div className={`sync-dot ${isConnected ? 'connected' : 'disconnected'}`}></div>
                         <span className="text-sm font-medium text-gray-700">
@@ -538,7 +570,7 @@
                                         <option value="all">All Status</option>
                                         <option value="Lead">Lead</option>
                                         <option value="Contacted">Contacted</option>
-                                        <option value="Proposal Sent">Proposal Sent</option>
+                                        <option value="Waiting Info/Call">Waiting Info/Call</option>
                                         <option value="In Progress">In Progress</option>
                                         <option value="Completed">Completed</option>
                                         <option value="On Hold">On Hold</option>
@@ -870,7 +902,7 @@
                                                 >
                                                     <option>Lead</option>
                                                     <option>Contacted</option>
-                                                    <option>Proposal Sent</option>
+                                                    <option>Waiting Info/Call</option>
                                                     <option>In Progress</option>
                                                     <option>Completed</option>
                                                     <option>On Hold</option>
@@ -1118,7 +1150,7 @@
                                     >
                                         <option>Lead</option>
                                         <option>Contacted</option>
-                                        <option>Proposal Sent</option>
+                                        <option>Waiting Info/Call</option>
                                         <option>In Progress</option>
                                         <option>Completed</option>
                                         <option>On Hold</option>
