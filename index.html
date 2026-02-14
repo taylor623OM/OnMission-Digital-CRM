@@ -13,6 +13,7 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     
     <style>
         body {
@@ -88,6 +89,13 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -108,6 +116,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
 
         // Firebase helper functions
         const FirebaseService = {
@@ -121,10 +130,11 @@
                 });
             },
 
-            async addContact(contact) {
+            async addContact(contact, userEmail) {
                 try {
                     const docRef = await db.collection('contacts').add({
                         ...contact,
+                        createdBy: userEmail,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
@@ -135,10 +145,11 @@
                 }
             },
 
-            async updateContact(id, updates) {
+            async updateContact(id, updates, userEmail) {
                 try {
                     await db.collection('contacts').doc(id).update({
                         ...updates,
+                        lastModifiedBy: userEmail,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 } catch (error) {
@@ -156,14 +167,19 @@
                 }
             },
 
-            async addHistory(contactId, historyItem) {
+            async addHistory(contactId, historyItem, userEmail) {
                 try {
                     const contact = await db.collection('contacts').doc(contactId).get();
                     if (contact.exists) {
                         const currentHistory = contact.data().history || [];
                         await db.collection('contacts').doc(contactId).update({
                             history: [
-                                { ...historyItem, id: Date.now(), date: new Date().toISOString().split('T')[0] },
+                                { 
+                                    ...historyItem, 
+                                    id: Date.now(), 
+                                    date: new Date().toISOString().split('T')[0],
+                                    user: userEmail
+                                },
                                 ...currentHistory
                             ],
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -176,7 +192,134 @@
             }
         };
 
-        function OnMissionCRM() {
+        function LoginScreen({ onLoginSuccess }) {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+            const [loading, setLoading] = useState(false);
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    onLoginSuccess();
+                } catch (error) {
+                    console.error("Login error:", error);
+                    setError(`Login failed: ${error.message}`);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="login-container">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+                        <div className="text-center mb-8">
+                            <div className="inline-block p-4 bg-gradient-to-br from-orange-500 to-blue-500 rounded-full mb-4">
+                                <i className="fas fa-church text-white text-4xl"></i>
+                            </div>
+                            <h1 className="text-3xl font-bold text-gray-900 mb-2">OnMission Digital</h1>
+                            <p className="text-gray-600">Church Website Projects CRM</p>
+                        </div>
+
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Email Address
+                                </label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                    placeholder="you@onmissiondigital.com"
+                                    required
+                                    autoComplete="email"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Password
+                                </label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                    placeholder="••••••••"
+                                    required
+                                    autoComplete="current-password"
+                                />
+                            </div>
+
+                            {error && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                                    <i className="fas fa-exclamation-circle mr-2"></i>
+                                    {error}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-gradient-to-r from-orange-500 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? (
+                                    <span className="flex items-center justify-center">
+                                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                                        Signing in...
+                                    </span>
+                                ) : (
+                                    'Sign In'
+                                )}
+                            </button>
+                        </form>
+
+                        <div className="mt-6 text-center text-sm text-gray-600">
+                            <p>Authorized users only</p>
+                            <p className="mt-2 text-xs">taylor@onmissiondigital.com • steve@onmissiondigital.com</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [authChecked, setAuthChecked] = useState(false);
+
+            useEffect(() => {
+                const unsubscribe = auth.onAuthStateChanged((user) => {
+                    setUser(user);
+                    setAuthChecked(true);
+                });
+
+                return () => unsubscribe();
+            }, []);
+
+            if (!authChecked) {
+                return (
+                    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-600 mx-auto mb-4"></div>
+                            <p className="text-gray-600">Loading...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!user) {
+                return <LoginScreen onLoginSuccess={() => setUser(auth.currentUser)} />;
+            }
+
+            return <OnMissionCRM user={user} />;
+        }
+
+        function OnMissionCRM({ user }) {
             const [contacts, setContacts] = useState([]);
             const [selectedContact, setSelectedContact] = useState(null);
             const [showAddContact, setShowAddContact] = useState(false);
@@ -221,7 +364,7 @@
                     await FirebaseService.addContact({
                         ...newContact,
                         history: []
-                    });
+                    }, user.email);
                     setShowAddContact(false);
                 } catch (error) {
                     alert('Error adding contact. Please try again.');
@@ -230,7 +373,7 @@
 
             const updateContact = async (id, updatedData) => {
                 try {
-                    await FirebaseService.updateContact(id, updatedData);
+                    await FirebaseService.updateContact(id, updatedData, user.email);
                 } catch (error) {
                     alert('Error updating contact. Please try again.');
                 }
@@ -251,10 +394,18 @@
 
             const addHistory = async (contactId, historyItem) => {
                 try {
-                    await FirebaseService.addHistory(contactId, historyItem);
+                    await FirebaseService.addHistory(contactId, historyItem, user.email);
                     setShowAddHistory(false);
                 } catch (error) {
                     alert('Error adding history. Please try again.');
+                }
+            };
+
+            const handleSignOut = async () => {
+                try {
+                    await auth.signOut();
+                } catch (error) {
+                    console.error("Sign out error:", error);
                 }
             };
 
@@ -327,18 +478,22 @@
 
                     <div className="gradient-bg text-white shadow-lg">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center flex-wrap gap-4">
                                 <div>
                                     <h1 className="text-3xl font-bold">OnMission Digital CRM</h1>
                                     <p className="text-orange-100 mt-1">Church Website Projects • Real-Time Sync</p>
                                 </div>
-                                <div className="flex gap-3">
+                                <div className="flex gap-3 items-center flex-wrap">
+                                    <div className="text-white text-sm bg-white bg-opacity-20 px-3 py-2 rounded-lg">
+                                        <i className="fas fa-user mr-2"></i>
+                                        {user.email}
+                                    </div>
                                     <button
                                         onClick={exportToGoogleSheets}
                                         className="bg-white text-orange-600 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition flex items-center gap-2"
                                     >
                                         <i className="fas fa-download"></i>
-                                        Export to Sheets
+                                        Export
                                     </button>
                                     <button
                                         onClick={() => setShowAddContact(true)}
@@ -346,6 +501,13 @@
                                     >
                                         <i className="fas fa-plus"></i>
                                         Add Contact
+                                    </button>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-30 transition"
+                                    >
+                                        <i className="fas fa-sign-out-alt mr-2"></i>
+                                        Sign Out
                                     </button>
                                 </div>
                             </div>
@@ -478,7 +640,7 @@
                                             <div className="space-y-2 text-sm">
                                                 <div className="flex items-center text-gray-600">
                                                     <i className="fas fa-envelope w-5"></i>
-                                                    <span className="ml-2">{contact.email}</span>
+                                                    <span className="ml-2 truncate">{contact.email}</span>
                                                 </div>
                                                 <div className="flex items-center text-gray-600">
                                                     <i className="fas fa-phone w-5"></i>
@@ -506,7 +668,7 @@
                                     ))}
                                 </div>
                             ) : (
-                                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                                <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
@@ -799,12 +961,11 @@
         function AddHistoryModal({ onClose, onAdd }) {
             const [type, setType] = useState('call');
             const [note, setNote] = useState('');
-            const [user, setUser] = useState('You');
 
             const handleSubmit = (e) => {
                 e.preventDefault();
                 if (note.trim()) {
-                    onAdd({ type, note, user });
+                    onAdd({ type, note });
                     onClose();
                 }
             };
@@ -828,16 +989,6 @@
                                         <option value="payment">Payment Received</option>
                                         <option value="invoice">Invoice Sent</option>
                                     </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
-                                    <input
-                                        type="text"
-                                        value={user}
-                                        onChange={(e) => setUser(e.target.value)}
-                                        className="w-full px-3 py-2 border rounded-lg"
-                                        placeholder="Who performed this activity?"
-                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -1007,7 +1158,7 @@
             );
         }
 
-        ReactDOM.render(<OnMissionCRM />, document.getElementById('root'));
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
