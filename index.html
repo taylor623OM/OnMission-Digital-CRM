@@ -1450,28 +1450,22 @@ function ImportCSVModal({ onClose, onImport }) {
 function EmailCampaignModal({ contacts, onClose, emailQueue, setEmailQueue, campaignSettings, setCampaignSettings }) {
     const [activeTab, setActiveTab] = useState('queue');
     const [emailTemplate, setEmailTemplate] = useState({
-        subject: 'Upgrade Your Church Website',
-        body: `Hi {ContactName},
+    subject: 'OnMission Digital - {ChurchName} ',
+    body: `{ContactName},
 
-I noticed {ChurchName}'s website and wanted to reach out about our church website services.
+Hope you are doing well!
 
-We specialize in creating beautiful, mobile-friendly websites specifically designed for churches. Our packages start at $750 and include:
+We've been helping churches and church plants get their digital presence up and running without the usual price tag. After seeing too many smaller congregations and associations either go without a website or get locked into expensive contracts, we decided to offer these services at cost, covering just our operational expenses so churches can focus their resources on ministry.
 
-✓ Custom Design
-✓ Mobile Responsive
-✓ Easy Content Management
-✓ SEO Optimized
-✓ Monthly Hosting & Support
+We came across {ChurchName} and thought we'd reach out. If you or any churches in your network need a website or giving platform set up, we'd love to help. Here are some recent build outs we have done:
 
-I'd love to show you some examples and discuss how we can help {ChurchName} reach more people online.
+- Mission Vida: https://missionvida.org
+- Echo KY: https://echoky.org
 
-Would you be available for a quick 15-minute call this week?
+We'd love to hear what you might need and see if we can help, no pressure either way.
 
-Best regards,
-Taylor Ezell
-OnMission Digital
-taylor@onmissiondigital.com`
-    });
+We really appreciate the work you're doing, and we're here to support however we can.`
+});
     const [filterStatus, setFilterStatus] = useState('Lead');
 
     const addToQueue = () => {
