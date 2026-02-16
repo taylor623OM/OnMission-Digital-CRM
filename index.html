@@ -912,6 +912,61 @@
                                             )}
                                         </div>
                                         <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Full Contact Name</label>
+    {isEditing ? (
+        <input
+            type="text"
+            value={editedContact.fullContactName || ''}
+            onChange={(e) => setEditedContact({ ...editedContact, fullContactName: e.target.value })}
+            className="w-full px-3 py-2 border rounded-lg"
+        />
+    ) : (
+        <p className="text-gray-900">{contact.fullContactName || 'Not provided'}</p>
+    )}
+</div>
+```
+
+---
+
+## 📄 **CSV IS ALREADY READY!**
+
+The CSV file I just gave you already has both columns:
+- **First Name** → Maps to "Contact Name" (for emails)
+- **Full Name** → Maps to "Full Contact Name" (for records)
+
+---
+
+## 📥 **How to Import After Code Update:**
+
+1. **Update your CRM code** with the 3 changes above
+2. **Commit to GitHub**
+3. **Wait for Netlify to deploy** (1-2 min)
+4. **Import the CSV** with this mapping:
+
+**Your CSV Column** → **CRM Field**
+- Association Name → Church Name
+- First Name → Contact Name ✅
+- Full Name → Full Contact Name ✅ (NEW!)
+- Email Address → Email
+- State → State
+- Website URL → Website
+
+---
+
+## 📧 **Result:**
+
+**In CRM:**
+- Contact Name: Gary (used in emails)
+- Full Contact Name: Gary Ellcessor (shown in contact details)
+
+**In Emails:**
+```
+Gary,
+
+Hope you are doing well!
+
+We came across Anderson Baptist Association...
+                                        <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                             {isEditing ? (
                                                 <input
@@ -1142,6 +1197,7 @@
             const [formData, setFormData] = useState({
                 churchName: '',
                 contactName: '',
+                fullContactName: '',
                 email: '',
                 phone: '',
                 address: '',
@@ -1164,15 +1220,26 @@
                         <form onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Church Name *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.churchName}
-                                        onChange={(e) => setFormData({ ...formData, churchName: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-lg"
-                                        required
-                                    />
-                                </div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name (First Name) *</label>
+    <input
+        type="text"
+        value={formData.contactName}
+        onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+        className="w-full px-3 py-2 border rounded-lg"
+        placeholder="Gary"
+        required
+    />
+</div>
+<div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Full Contact Name</label>
+    <input
+        type="text"
+        value={formData.fullContactName || ''}
+        onChange={(e) => setFormData({ ...formData, fullContactName: e.target.value })}
+        className="w-full px-3 py-2 border rounded-lg"
+        placeholder="Gary Ellcessor"
+    />
+</div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name *</label>
                                     <input
