@@ -1458,24 +1458,7 @@ function ImportCSVModal({ onClose, onImport }) {
                 </div>
             ))}
         </div>
-        <div className="flex gap-3 mt-6">
-            <button
-                onClick={() => setStep(3)}
-                disabled={!mapping.churchName || !mapping.email}
-                className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50"
-            >
-                Preview Import
-            </button>
-            <button
-                onClick={() => setStep(1)}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-            >
-                Back
-            </button>
-        </div>
-    </div>
-)}
-                                  
+)}                    
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={() => setStep(3)}
