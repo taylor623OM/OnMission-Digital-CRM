@@ -1475,19 +1475,7 @@ function ImportCSVModal({ onClose, onImport }) {
         </div>
     </div>
 )}
-                                    <select
-                                        value={mapping[field] || ''}
-                                        onChange={(e) => setMapping({ ...mapping, [field]: e.target.value })}
-                                        className="px-3 py-2 border rounded-lg"
-                                    >
-                                        <option value="">-- Select Column --</option>
-                                        {headers.map(header => (
-                                            <option key={header} value={header}>{header}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            ))}
-                        </div>
+                                  
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={() => setStep(3)}
