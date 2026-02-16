@@ -1433,9 +1433,30 @@ function ImportCSVModal({ onClose, onImport }) {
                         <h3 className="text-lg font-semibold mb-4">Map Your Columns</h3>
                         <p className="text-gray-600 mb-6">Match your CSV columns to CRM fields</p>
                         <div className="space-y-4">
-                            {['churchName', 'contactName', 'email', 'phone', 'address', 'state', 'website'].map(field => (
-                                <div key={field} className="grid grid-cols-2 gap-4 items-center">
-                                    <label className="font-medium capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}:</label>
+{[
+    { key: 'churchName', label: 'Church Name' },
+    { key: 'contactName', label: 'Contact Name' },
+    { key: 'fullContactName', label: 'Full Contact Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'address', label: 'Address' },
+    { key: 'state', label: 'State' },
+    { key: 'website', label: 'Website' }
+].map(field => (
+    <div key={field.key} className="grid grid-cols-2 gap-4 items-center">
+        <label className="font-medium">{field.label}:</label>
+        <select
+            value={mapping[field.key] || ''}
+            onChange={(e) => setMapping({ ...mapping, [field.key]: e.target.value })}
+            className="px-3 py-2 border rounded-lg"
+        >
+            <option value="">-- Select Column --</option>
+            {headers.map(header => (
+                <option key={header} value={header}>{header}</option>
+            ))}
+        </select>
+    </div>
+))}
                                     <select
                                         value={mapping[field] || ''}
                                         onChange={(e) => setMapping({ ...mapping, [field]: e.target.value })}
