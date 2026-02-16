@@ -352,6 +352,10 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [isConnected, setIsConnected] = useState(true);
             const [loading, setLoading] = useState(true);
+            const [showEmailCampaign, setShowEmailCampaign] = useState(false);
+            const [showImportCSV, setShowImportCSV] = useState(false);
+            const [emailQueue, setEmailQueue] = useState([]);
+            const [campaignSettings, setCampaignSettings] = useState({ dailyLimit: 25, sendTime: '09:00', enabled: false });
 
             useEffect(() => {
                 const unsubscribe = FirebaseService.subscribeToContacts((updatedContacts) => {
@@ -535,6 +539,20 @@
                                         Add Contact
                                     </button>
                                     <button
+                                    onClick={() => setShowImportCSV(true)}
+                                    className="bg-white text-orange-600 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition flex items-center gap-2"
+                                >
+                                    <i className="fas fa-file-upload"></i>
+                                    Import CSV
+                                </button>
+                                <button
+                                    onClick={() => setShowEmailCampaign(true)}
+                                    className="bg-white text-orange-600 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition flex items-center gap-2"
+                                >
+                                    <i className="fas fa-envelope"></i>
+                                    Email Campaign
+                                </button>
+                                    <button
                                         onClick={handleSignOut}
                                         className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-30 transition"
                                     >
@@ -599,7 +617,18 @@
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                            <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition" onClick={() => setShowEmailCampaign(true)}>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-500 text-sm">Emails Queued</p>
+                                    <p className="text-2xl font-bold text-gray-900">{emailQueue.length}</p>
+                                </div>
+                                <div className="bg-purple-100 rounded-full p-3">
+                                    <i className="fas fa-envelope text-purple-600"></i>
+                                </div>
+                            </div>
+                        </div>
                             <div className="bg-white rounded-lg shadow-sm p-4">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -800,6 +829,26 @@
                             onAdd={addContact}
                         />
                     )}
+                            {showImportCSV && (
+            <ImportCSVModal
+                onClose={() => setShowImportCSV(false)}
+                onImport={(contacts) => {
+                    contacts.forEach(contact => addContact(contact));
+                    setShowImportCSV(false);
+                }}
+            />
+        )}
+        
+        {showEmailCampaign && (
+            <EmailCampaignModal
+                contacts={contacts}
+                onClose={() => setShowEmailCampaign(false)}
+                emailQueue={emailQueue}
+                setEmailQueue={setEmailQueue}
+                campaignSettings={campaignSettings}
+                setCampaignSettings={setCampaignSettings}
+            />
+        )}
                 </div>
             );
         }
@@ -1230,7 +1279,415 @@
                 </div>
             );
         }
+function ImportCSVModal({ onClose, onImport }) {
+    const [csvData, setCsvData] = useState([]);
+    const [headers, setHeaders] = useState([]);
+    const [mapping, setMapping] = useState({});
+    const [step, setStep] = useState(1);
 
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target.result;
+            const lines = text.split('\n').filter(line => line.trim());
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const data = lines.slice(1).map(line => {
+                const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                const obj = {};
+                headers.forEach((header, index) => {
+                    obj[header] = values[index] || '';
+                });
+                return obj;
+            });
+
+            setHeaders(headers);
+            setCsvData(data);
+            setStep(2);
+        };
+        reader.readAsText(file);
+    };
+
+    const handleImport = () => {
+        const contacts = csvData.map(row => ({
+            churchName: row[mapping.churchName] || '',
+            contactName: row[mapping.contactName] || '',
+            email: row[mapping.email] || '',
+            phone: row[mapping.phone] || '',
+            address: row[mapping.address] || '',
+            state: row[mapping.state] || '',
+            websiteUrl: row[mapping.website] || '',
+            projectStatus: 'Lead',
+            pricing: '',
+            contacted: false
+        }));
+
+        onImport(contacts);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold">Import Contacts from CSV</h2>
+                    <button onClick={onClose} className="text-gray-600 hover:text-gray-900">
+                        <i className="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                {step === 1 && (
+                    <div className="text-center py-12">
+                        <div className="mb-6">
+                            <i className="fas fa-file-csv text-6xl text-orange-600 mb-4"></i>
+                        </div>
+                        <h3 className="text-xl font-semibold mb-4">Upload Your CSV File</h3>
+                        <p className="text-gray-600 mb-6">Select a CSV file with your church contacts</p>
+                        <input
+                            type="file"
+                            accept=".csv"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            id="csv-upload"
+                        />
+                        <label
+                            htmlFor="csv-upload"
+                            className="inline-block bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 cursor-pointer"
+                        >
+                            <i className="fas fa-upload mr-2"></i>
+                            Choose CSV File
+                        </label>
+                    </div>
+                )}
+
+                {step === 2 && (
+                    <div>
+                        <h3 className="text-lg font-semibold mb-4">Map Your Columns</h3>
+                        <p className="text-gray-600 mb-6">Match your CSV columns to CRM fields</p>
+                        <div className="space-y-4">
+                            {['churchName', 'contactName', 'email', 'phone', 'address', 'state', 'website'].map(field => (
+                                <div key={field} className="grid grid-cols-2 gap-4 items-center">
+                                    <label className="font-medium capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}:</label>
+                                    <select
+                                        value={mapping[field] || ''}
+                                        onChange={(e) => setMapping({ ...mapping, [field]: e.target.value })}
+                                        className="px-3 py-2 border rounded-lg"
+                                    >
+                                        <option value="">-- Select Column --</option>
+                                        {headers.map(header => (
+                                            <option key={header} value={header}>{header}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => setStep(3)}
+                                disabled={!mapping.churchName || !mapping.email}
+                                className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50"
+                            >
+                                Preview Import
+                            </button>
+                            <button
+                                onClick={() => setStep(1)}
+                                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                            >
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 3 && (
+                    <div>
+                        <h3 className="text-lg font-semibold mb-4">Preview Import ({csvData.length} contacts)</h3>
+                        <div className="max-h-96 overflow-y-auto mb-6">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Church</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {csvData.slice(0, 10).map((row, idx) => (
+                                        <tr key={idx}>
+                                            <td className="px-4 py-2 text-sm">{row[mapping.churchName]}</td>
+                                            <td className="px-4 py-2 text-sm">{row[mapping.contactName]}</td>
+                                            <td className="px-4 py-2 text-sm">{row[mapping.email]}</td>
+                                            <td className="px-4 py-2 text-sm">{row[mapping.phone]}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleImport}
+                                className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700"
+                            >
+                                <i className="fas fa-check mr-2"></i>
+                                Import {csvData.length} Contacts
+                            </button>
+                            <button
+                                onClick={() => setStep(2)}
+                                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                            >
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function EmailCampaignModal({ contacts, onClose, emailQueue, setEmailQueue, campaignSettings, setCampaignSettings }) {
+    const [activeTab, setActiveTab] = useState('queue');
+    const [emailTemplate, setEmailTemplate] = useState({
+        subject: 'Upgrade Your Church Website',
+        body: `Hi {ContactName},
+
+I noticed {ChurchName}'s website and wanted to reach out about our church website services.
+
+We specialize in creating beautiful, mobile-friendly websites specifically designed for churches. Our packages start at $750 and include:
+
+✓ Custom Design
+✓ Mobile Responsive
+✓ Easy Content Management
+✓ SEO Optimized
+✓ Monthly Hosting & Support
+
+I'd love to show you some examples and discuss how we can help {ChurchName} reach more people online.
+
+Would you be available for a quick 15-minute call this week?
+
+Best regards,
+Taylor Ezell
+OnMission Digital
+taylor@onmissiondigital.com`
+    });
+    const [filterStatus, setFilterStatus] = useState('Lead');
+
+    const addToQueue = () => {
+        const newQueue = contacts
+            .filter(c => c.projectStatus === filterStatus && !c.emailedAt)
+            .map(c => ({
+                contactId: c.id,
+                churchName: c.churchName,
+                contactName: c.contactName,
+                email: c.email,
+                status: 'pending',
+                scheduledFor: null
+            }));
+        setEmailQueue([...emailQueue, ...newQueue]);
+    };
+
+    const removeFromQueue = (contactId) => {
+        setEmailQueue(emailQueue.filter(q => q.contactId !== contactId));
+    };
+
+    const sentToday = emailQueue.filter(q => q.status === 'sent' && 
+        new Date(q.sentAt).toDateString() === new Date().toDateString()
+    ).length;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+            <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Email Campaign Manager</h2>
+                    <button onClick={onClose} className="text-gray-600 hover:text-gray-900">
+                        <i className="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div className="border-b">
+                    <div className="flex px-6">
+                        <button
+                            onClick={() => setActiveTab('queue')}
+                            className={`px-4 py-3 font-medium border-b-2 ${activeTab === 'queue' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-600'}`}
+                        >
+                            <i className="fas fa-list mr-2"></i>
+                            Queue ({emailQueue.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('templates')}
+                            className={`px-4 py-3 font-medium border-b-2 ${activeTab === 'templates' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-600'}`}
+                        >
+                            <i className="fas fa-file-alt mr-2"></i>
+                            Template
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('settings')}
+                            className={`px-4 py-3 font-medium border-b-2 ${activeTab === 'settings' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-600'}`}
+                        >
+                            <i className="fas fa-cog mr-2"></i>
+                            Settings
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-6">
+                    {activeTab === 'queue' && (
+                        <div>
+                            <div className="grid grid-cols-3 gap-4 mb-6">
+                                <div className="bg-blue-50 rounded-lg p-4">
+                                    <p className="text-sm text-blue-600 font-medium">Pending</p>
+                                    <p className="text-2xl font-bold text-blue-900">{emailQueue.filter(q => q.status === 'pending').length}</p>
+                                </div>
+                                <div className="bg-green-50 rounded-lg p-4">
+                                    <p className="text-sm text-green-600 font-medium">Sent Today</p>
+                                    <p className="text-2xl font-bold text-green-900">{sentToday} / {campaignSettings.dailyLimit}</p>
+                                </div>
+                                <div className="bg-purple-50 rounded-lg p-4">
+                                    <p className="text-sm text-purple-600 font-medium">Next Send</p>
+                                    <p className="text-2xl font-bold text-purple-900">{campaignSettings.sendTime}</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                <h3 className="font-semibold mb-3">Add Contacts to Queue</h3>
+                                <div className="flex gap-3">
+                                    <select
+                                        value={filterStatus}
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        className="flex-1 px-3 py-2 border rounded-lg"
+                                    >
+                                        <option value="Lead">Lead</option>
+                                        <option value="Contacted">Contacted</option>
+                                        <option value="Waiting Info/Call">Waiting Info/Call</option>
+                                    </select>
+                                    <button
+                                        onClick={addToQueue}
+                                        className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700"
+                                    >
+                                        <i className="fas fa-plus mr-2"></i>
+                                        Add to Queue
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                {emailQueue.map((item, idx) => (
+                                    <div key={idx} className="bg-white border rounded-lg p-4 flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <h4 className="font-medium">{item.churchName}</h4>
+                                            <p className="text-sm text-gray-600">{item.contactName} • {item.email}</p>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <span className={`text-xs px-3 py-1 rounded-full ${
+                                                item.status === 'sent' ? 'bg-green-100 text-green-700' :
+                                                item.status === 'pending' ? 'bg-blue-100 text-blue-700' :
+                                                'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {item.status}
+                                            </span>
+                                            {item.status === 'pending' && (
+                                                <button
+                                                    onClick={() => removeFromQueue(item.contactId)}
+                                                    className="text-red-600 hover:text-red-800"
+                                                >
+                                                    <i className="fas fa-trash"></i>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {emailQueue.length === 0 && (
+                                    <div className="text-center py-12 text-gray-500">
+                                        <i className="fas fa-inbox text-4xl mb-3"></i>
+                                        <p>No emails in queue. Add contacts above to get started!</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'templates' && (
+                        <div>
+                            <h3 className="font-semibold mb-4">Email Template</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Subject Line</label>
+                                    <input
+                                        type="text"
+                                        value={emailTemplate.subject}
+                                        onChange={(e) => setEmailTemplate({ ...emailTemplate, subject: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Body</label>
+                                    <textarea
+                                        value={emailTemplate.body}
+                                        onChange={(e) => setEmailTemplate({ ...emailTemplate, body: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-lg font-mono text-sm"
+                                        rows="20"
+                                    />
+                                </div>
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h4 className="font-medium text-blue-900 mb-2">Available Variables:</h4>
+                                    <p className="text-sm text-blue-700">
+                                        <code>{'{ChurchName}'}</code> • <code>{'{ContactName}'}</code> • <code>{'{State}'}</code>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Daily Email Limit</label>
+                                <input
+                                    type="number"
+                                    value={campaignSettings.dailyLimit}
+                                    onChange={(e) => setCampaignSettings({ ...campaignSettings, dailyLimit: parseInt(e.target.value) })}
+                                    className="w-full px-4 py-2 border rounded-lg"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Send Time (Daily)</label>
+                                <input
+                                    type="time"
+                                    value={campaignSettings.sendTime}
+                                    onChange={(e) => setCampaignSettings({ ...campaignSettings, sendTime: e.target.value })}
+                                    className="w-full px-4 py-2 border rounded-lg"
+                                />
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="checkbox"
+                                    checked={campaignSettings.enabled}
+                                    onChange={(e) => setCampaignSettings({ ...campaignSettings, enabled: e.target.checked })}
+                                    className="w-5 h-5 text-orange-600 rounded"
+                                />
+                                <label className="font-medium">Enable Automatic Sending</label>
+                            </div>
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <h4 className="font-medium text-yellow-900 mb-2">
+                                    <i className="fas fa-exclamation-triangle mr-2"></i>
+                                    Gmail Integration Required
+                                </h4>
+                                <p className="text-sm text-yellow-700 mb-3">
+                                    To send emails, you need to connect your Gmail account. This requires setting up Google OAuth.
+                                </p>
+                                <button className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 text-sm">
+                                    Setup Gmail Integration
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
