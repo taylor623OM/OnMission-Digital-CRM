@@ -378,11 +378,24 @@
                 }
             }, [contacts]);
 
-            const filteredContacts = contacts.filter(contact => {
+                       const filteredContacts = contacts.filter(contact => {
                 const matchesSearch = contact.churchName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                     contact.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                     contact.email?.toLowerCase().includes(searchTerm.toLowerCase());
-                const matchesStatus = filterStatus === 'all' || contact.projectStatus === filterStatus;
+                
+                let matchesStatus = false;
+                if (filterStatus === 'all') {
+                    matchesStatus = true;
+                } else if (filterStatus === 'needs-followup') {
+                    matchesStatus = contact.followUpDate && new Date(contact.followUpDate) <= new Date(new Date().getTime() + 7*24*60*60*1000);
+                } else if (filterStatus === 'overdue') {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    matchesStatus = contact.followUpDate && new Date(contact.followUpDate) < today;
+                } else {
+                    matchesStatus = contact.projectStatus === filterStatus;
+                }
+                
                 return matchesSearch && matchesStatus;
             });
 
@@ -592,6 +605,8 @@
                                         <option value="In Progress">In Progress</option>
                                         <option value="Completed">Completed</option>
                                         <option value="On Hold">On Hold</option>
+                                        <option value="needs-followup">Needs Follow-Up</option>
+                                        <option value="overdue">Overdue</option>
                                     </select>
                                     <div className="flex border border-gray-300 rounded-lg overflow-hidden">
     <button
@@ -617,7 +632,7 @@
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
                             <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition" onClick={() => setShowEmailCampaign(true)}>
                             <div className="flex items-center justify-between">
                                 <div>
@@ -665,6 +680,34 @@
                                         <i className="fas fa-star text-blue-600"></i>
                                     </div>
                                 </div>
+                                <div className="bg-white rounded-lg shadow-sm p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-500 text-sm">Tasks Due</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            {contacts.filter(c => {
+                                                if (!c.followUpDate) return false;
+                                                const dueDate = new Date(c.followUpDate);
+                                                const today = new Date();
+                                                today.setHours(0,0,0,0);
+                                                return dueDate <= today;
+                                            }).length}
+                                        </p>
+                                    </div>
+                                    <div className="bg-red-100 rounded-full p-3">
+                                        <i className="fas fa-bell text-red-600"></i>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    {contacts.filter(c => {
+                                        if (!c.followUpDate) return false;
+                                        const dueDate = new Date(c.followUpDate);
+                                        const today = new Date();
+                                        today.setHours(0,0,0,0);
+                                        return dueDate < today;
+                                    }).length} overdue
+                                </p>
+                            </div>
                             </div>
                             <div className="bg-white rounded-lg shadow-sm p-4">
                                 <div className="flex items-center justify-between">
@@ -898,28 +941,16 @@
                                 <div>
                                     <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
                                     <div className="space-y-3">
+            
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-                                            {isEditing ? (
-                                                <input
-                                                    type="text"
-                                                    value={editedContact.contactName}
-                                                    onChange={(e) => setEditedContact({ ...editedContact, contactName: e.target.value })}
-                                                    className="w-full px-3 py-2 border rounded-lg"
-                                                />
-                                            ) : (
-                                                <p className="text-gray-900">{contact.contactName}</p>
-                                            )}
-                                        </div>
-                                        <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">Full Contact Name</label>
-    {isEditing ? (
-        <input
-            type="text"
-            value={editedContact.fullContactName || ''}
-            onChange={(e) => setEditedContact({ ...editedContact, fullContactName: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg"
-        />
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Full Contact Name</label>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        value={editedContact.fullContactName || ''}
+                                        onChange={(e) => setEditedContact({ ...editedContact, fullContactName: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                    />
     ) : (
         <p className="text-gray-900">{contact.fullContactName || 'Not provided'}</p>
     )}
@@ -1071,14 +1102,18 @@ We came across Anderson Baptist Association...
                                                 <p className="text-gray-900 font-semibold">{contact.pricing}</p>
                                             )}
                                         </div>
-                                        <div>
+                                       <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Follow-Up Date</label>
+                                            {isEditing ? (
                                                 <input
-                                                type="date"
-                                                value={formData.followUpDate || ''}
-                                                onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
-                                                className="w-full px-3 py-2 border rounded-lg"
-                                            />
+                                                    type="date"
+                                                    value={editedContact.followUpDate || ''}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, followUpDate: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900">{contact.followUpDate ? new Date(contact.followUpDate).toLocaleDateString() : 'Not set'}</p>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Contacted</label>
@@ -1332,6 +1367,15 @@ We came across Anderson Baptist Association...
                                         placeholder="$3,500"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Follow-Up Date</label>
+                                    <input
+                                        type="date"
+                                        value={formData.followUpDate || ''}
+                                        onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                    />
+                                </div>
                                 <div className="flex items-center">
                                     <input
                                         type="checkbox"
@@ -1398,6 +1442,7 @@ function ImportCSVModal({ onClose, onImport }) {
             projectStatus: 'Lead',
             pricing: '',
             contacted: false
+            followUpDate: ''
         }));
 
         onImport(contacts);
