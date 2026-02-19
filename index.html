@@ -377,7 +377,8 @@
                     }
                 }
             }, [contacts]);
-               const filteredContacts = contacts.filter(contact => {
+
+            const filteredContacts = contacts.filter(contact => {
                 const matchesSearch = contact.churchName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                     contact.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                     contact.email?.toLowerCase().includes(searchTerm.toLowerCase());
