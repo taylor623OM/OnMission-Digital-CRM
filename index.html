@@ -286,7 +286,7 @@
 
         // Initialize Firebase
         // Gmail API Configuration
-        const GMAIL_CLIENT_ID = '1015420857416-npompsip7taabu15p04gt8537h02pso.apps.googleusercontent.com';
+        const GMAIL_CLIENT_ID = '1015420857416-npompssip7taabu15p04gt8537h02pso.apps.googleusercontent.com';
         const GMAIL_SCOPES = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly';
 
         const firebaseConfig = {
@@ -642,6 +642,13 @@
                 if (dueDate <= sevenDays) return 'due-soon';
                 return 'active';
             };
+            
+            const capitalizeName = (name) => {
+                if (!name) return '';
+                return name.split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
+            };
 
             const getHistoryIcon = (type) => {
                 const icons = {
@@ -655,18 +662,37 @@
             };
 
             const connectGmail = () => {
-                const client = google.accounts.oauth2.initTokenClient({
-                    client_id: GMAIL_CLIENT_ID,
-                    scope: GMAIL_SCOPES,
-                    callback: (response) => {
-                        if (response.access_token) {
-                            setGmailAccessToken(response.access_token);
-                            setGmailConnected(true);
-                            alert('✅ Gmail connected successfully!');
+                try {
+                    if (!window.google || !window.google.accounts) {
+                        alert('Google API not loaded yet. Please refresh the page and try again.');
+                        return;
+                    }
+                    
+                    const client = google.accounts.oauth2.initTokenClient({
+                        client_id: GMAIL_CLIENT_ID,
+                        scope: GMAIL_SCOPES,
+                        callback: (response) => {
+                            if (response.error) {
+                                console.error('OAuth error:', response);
+                                alert('Failed to connect Gmail: ' + response.error);
+                                return;
+                            }
+                            if (response.access_token) {
+                                setGmailAccessToken(response.access_token);
+                                setGmailConnected(true);
+                                alert('✅ Gmail connected successfully!');
+                            }
+                        },
+                        error_callback: (error) => {
+                            console.error('OAuth error:', error);
+                            alert('Failed to connect Gmail. Please check your Google Cloud settings.');
                         }
-                    },
-                });
-                client.requestAccessToken();
+                    });
+                    client.requestAccessToken({ prompt: 'consent' });
+                } catch (error) {
+                    console.error('Error initializing Gmail:', error);
+                    alert('Error: ' + error.message);
+                }
             };
 
             const sendEmailViaGmail = async (to, subject, body, contactId) => {
@@ -677,6 +703,7 @@
 
                 try {
                     const email = [
+                        `From: Taylor Ezell <${user.email}>`,
                         `To: ${to}`,
                         `Subject: ${subject}`,
                         'Content-Type: text/plain; charset=utf-8',
@@ -2110,13 +2137,14 @@ We really appreciate the work you're doing, and we're here to support however we
                                                 <button
                                                     onClick={async () => {
                                                         if (!contact) return;
+                                                        const contactName = capitalizeName(contact.fullContactName || contact.contactName || '');
                                                         const subject = emailTemplate.subject
                                                             .replace('{ChurchName}', contact.churchName || '')
-                                                            .replace('{ContactName}', contact.contactName || '')
+                                                            .replace('{ContactName}', contactName)
                                                             .replace('{State}', contact.state || '');
                                                         const body = emailTemplate.body
                                                             .replace(/{ChurchName}/g, contact.churchName || '')
-                                                            .replace(/{ContactName}/g, contact.contactName || '')
+                                                            .replace(/{ContactName}/g, contactName)
                                                             .replace(/{State}/g, contact.state || '');
                                                         
                                                         await sendEmail(contact.email, subject, body, contact.id);
