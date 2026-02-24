@@ -2158,8 +2158,12 @@ OnMission Digital`
                                             {item.status === 'pending' && gmailConnected && (
                                                 <button
                                                     onClick={async () => {
-                                                        if (!contact) return;
-                                                        const contactName = capitalizeName(contact.fullContactName || contact.contactName || '');
+                                                        const contact = contacts.find(c => c.id === item.contactId);
+                                                        if (!contact) {
+                                                            alert('Contact not found');
+                                                            return;
+                                                        }
+                                                        const contactName = contact.fullContactName || contact.contactName || contact.churchName || 'there';
                                                         const subject = emailTemplate.subject
                                                             .replace('{ChurchName}', contact.churchName || '')
                                                             .replace('{ContactName}', contactName)
