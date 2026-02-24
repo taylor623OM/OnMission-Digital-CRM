@@ -19,74 +19,76 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
-        }
-        .gradient-bg {
-            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 600;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: all 0.2s ease;
-        }
-        .status-badge:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-        }
-        .timeline-item {
-            position: relative;
-            padding-left: 30px;
-            padding-bottom: 20px;
-        }
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: 8px;
-            top: 8px;
-            bottom: -12px;
-            width: 2px;
-            background: linear-gradient(180deg, #DC7746 0%, #539CC3 100%);
-        }
-        .timeline-dot {
-            position: absolute;
-            left: 0;
-            top: 8px;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 3px solid white;
-            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
-            box-shadow: 0 2px 8px rgba(220, 119, 70, 0.3);
-        }
-        .card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(0,0,0,0.05);
-            background: white;
-        }
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.12) !important;
-            border-color: rgba(220, 119, 70, 0.2);
+        /* OnMission Digital - Modern Layout Design System */
+        :root {
+            --brand-orange: #DC7746;
+            --brand-blue: #539CC3;
+            --color-bg: #F8FAFB;
+            --color-card: #FFFFFF;
+            --color-text-primary: #1F2937;
+            --color-text-secondary: #6B7280;
+            --color-border: #E5E7EB;
+            --color-border-hover: #D1D5DB;
+            --shadow-xs: 0 1px 2px rgba(0,0,0,0.03);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 12px 24px rgba(0,0,0,0.08);
+            --shadow-xl: 0 24px 48px rgba(0,0,0,0.12);
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 18px;
+            --radius-xl: 24px;
         }
         
-        /* Dashboard Widget Enhancements */
+        * {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            font-feature-settings: 'tnum' 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            letter-spacing: -0.01em;
+        }
+        
+        /* Modern Header */
+        .gradient-bg {
+            background: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-blue) 100%);
+            box-shadow: var(--shadow-md);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Modern Card System */
+        .card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card:hover {
+            border-color: var(--brand-orange);
+            box-shadow: var(--shadow-xl);
+            transform: translateY(-6px);
+        }
+        
+        /* Dashboard Widgets - Elevated Design */
         .dashboard-widget {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.05);
+            background: var(--color-card);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--color-border);
             position: relative;
             overflow: hidden;
         }
+        
         .dashboard-widget::before {
             content: '';
             position: absolute;
@@ -94,121 +96,69 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: linear-gradient(90deg, #DC7746 0%, #539CC3 100%);
+            background: linear-gradient(90deg, var(--brand-orange) 0%, var(--brand-blue) 100%);
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.35s ease;
         }
+        
         .dashboard-widget:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--brand-orange);
         }
+        
         .dashboard-widget:hover::before {
             opacity: 1;
         }
         
-        /* Icon Backgrounds with Gradients */
-        .icon-gradient-orange {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        }
-        .icon-gradient-green {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        }
-        .icon-gradient-blue {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        }
-        .icon-gradient-purple {
-            background: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%);
-        }
-        .icon-gradient-red {
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        }
-        .icon-gradient-gray {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-        }
-        
-        .sync-indicator {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 18px;
-            background: white;
+        /* Enhanced Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
             border-radius: 24px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 1000;
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-        .sync-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        .sync-dot.connected {
-            background: #10b981;
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
-        }
-        .sync-dot.disconnected {
-            background: #ef4444;
-            box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(0.95); }
-        }
-        .login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
-        }
-        .quick-add-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
-            color: white;
-            font-size: 24px;
-            box-shadow: 0 8px 24px rgba(220, 119, 70, 0.4);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 999;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .quick-add-btn:hover {
-            transform: scale(1.1) rotate(90deg);
-            box-shadow: 0 12px 32px rgba(220, 119, 70, 0.5);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            box-shadow: var(--shadow-xs);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        /* Button Enhancements */
+        .status-badge:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Modern Buttons */
         .btn-primary {
-            background: linear-gradient(135deg, #DC7746 0%, #c96636 100%);
-            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--brand-orange) 0%, #C96636 100%);
+            color: white;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            padding: 12px 24px;
+            border: none;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            letter-spacing: -0.01em;
         }
+        
         .btn-primary:hover {
-            background: linear-gradient(135deg, #c96636 0%, #b85526 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(220, 119, 70, 0.3);
+            background: linear-gradient(135deg, #C96636 0%, #B85526 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }
         
-        /* Smooth Scrolling */
-        * {
-            scroll-behavior: smooth;
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
         }
         
-        /* Phase 3: Profile Pictures & Enhanced Cards */
+        /* Profile Circle - OnMission Brand */
         .profile-circle {
-            width: 48px;
-            height: 48px;
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -216,53 +166,81 @@
             font-weight: 700;
             font-size: 18px;
             color: white;
-            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            background: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-blue) 100%);
+            box-shadow: 0 4px 16px rgba(220, 119, 70, 0.3);
             flex-shrink: 0;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .profile-circle:hover {
+            transform: scale(1.15) rotate(8deg);
+            box-shadow: 0 8px 24px rgba(220, 119, 70, 0.4);
         }
         
         .profile-circle-sm {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             font-size: 14px;
         }
         
         /* Status Indicator Dots */
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 11px;
+            height: 11px;
             border-radius: 50%;
             border: 2px solid white;
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+            box-shadow: 0 0 0 1px var(--color-border);
             flex-shrink: 0;
+            transition: all 0.3s ease;
         }
         
         .status-dot-overdue {
-            background: #ef4444;
-            box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
-            animation: pulse-red 2s infinite;
+            background: #EF4444;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.7), 0 0 0 1px var(--color-border);
+            animation: pulse-urgent 2s infinite;
         }
         
         .status-dot-due-soon {
-            background: #f59e0b;
-            box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+            background: #F59E0B;
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.6), 0 0 0 1px var(--color-border);
+            animation: pulse-warning 2.5s infinite;
         }
         
         .status-dot-active {
-            background: #10b981;
+            background: #10B981;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
         }
         
-        @keyframes pulse-red {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.1); }
+        @keyframes pulse-urgent {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.7);
+            }
+            50% { 
+                opacity: 0.85; 
+                transform: scale(1.2);
+                box-shadow: 0 0 28px rgba(239, 68, 68, 0.9);
+            }
         }
         
-        /* Enhanced Card Layout */
+        @keyframes pulse-warning {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.9; 
+                transform: scale(1.1);
+            }
+        }
+        
+        /* Contact Card Layout */
         .contact-card-header {
             display: flex;
-            gap: 12px;
+            gap: 18px;
             align-items: start;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
         
         .contact-card-info {
@@ -272,9 +250,142 @@
         
         .contact-card-meta {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             align-items: center;
             flex-wrap: wrap;
+        }
+        
+        /* Icon Gradients - Brand Colors */
+        .icon-gradient-orange { 
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); 
+            box-shadow: var(--shadow-xs);
+        }
+        .icon-gradient-green { 
+            background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); 
+            box-shadow: var(--shadow-xs);
+        }
+        .icon-gradient-blue { 
+            background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); 
+            box-shadow: var(--shadow-xs);
+        }
+        .icon-gradient-purple { 
+            background: linear-gradient(135deg, #E9D5FF 0%, #D8B4FE 100%); 
+            box-shadow: var(--shadow-xs);
+        }
+        .icon-gradient-red { 
+            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); 
+            box-shadow: var(--shadow-xs);
+        }
+        .icon-gradient-gray { 
+            background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%); 
+            box-shadow: var(--shadow-xs);
+        }
+        
+        /* Timeline - Modern */
+        .timeline-item {
+            position: relative;
+            padding-left: 32px;
+            padding-bottom: 22px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 9px;
+            top: 10px;
+            bottom: -10px;
+            width: 2px;
+            background: linear-gradient(180deg, var(--brand-orange) 0%, var(--brand-blue) 100%);
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid white;
+            background: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-blue) 100%);
+            box-shadow: 0 0 0 1px var(--color-border), 0 3px 12px rgba(220, 119, 70, 0.35);
+        }
+        
+        /* Sync Indicator - Polished */
+        .sync-indicator {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            border: 1px solid var(--color-border);
+        }
+        
+        .sync-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            animation: pulse-sync 2s infinite;
+        }
+        
+        .sync-dot.connected {
+            background: #10B981;
+            box-shadow: 0 0 14px rgba(16, 185, 129, 0.7);
+        }
+        
+        .sync-dot.disconnected {
+            background: #EF4444;
+            box-shadow: 0 0 14px rgba(239, 68, 68, 0.7);
+        }
+        
+        @keyframes pulse-sync {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.75; transform: scale(0.92); }
+        }
+        
+        /* Quick Add Button - Modern */
+        .quick-add-btn {
+            position: fixed;
+            bottom: 36px;
+            right: 36px;
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-blue) 100%);
+            color: white;
+            font-size: 26px;
+            box-shadow: 0 10px 30px rgba(220, 119, 70, 0.4);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 999;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .quick-add-btn:hover {
+            transform: scale(1.15) rotate(90deg);
+            box-shadow: 0 16px 40px rgba(220, 119, 70, 0.5);
+        }
+        
+        .quick-add-btn:active {
+            transform: scale(1.08) rotate(90deg);
+        }
+        
+        /* Login Container */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-blue) 100%);
         }
     </style>
 </head>
@@ -786,6 +897,34 @@
                 }
             };
 
+            const updateEmailedContacts = async () => {
+                const emailedContacts = contacts.filter(c => c.emailedAt && !c.contacted);
+                
+                if (emailedContacts.length === 0) {
+                    alert('No contacts need updating. All emailed contacts are already marked as contacted!');
+                    return;
+                }
+                
+                if (!confirm(`Found ${emailedContacts.length} contacts that were emailed but not marked as contacted.\n\nUpdate them now?\n\n- Mark as "Contacted? Yes"\n- Change status from "Lead" to "Contacted"`)) {
+                    return;
+                }
+                
+                try {
+                    let updated = 0;
+                    for (const contact of emailedContacts) {
+                        const updates = { contacted: true };
+                        if (contact.projectStatus === 'Lead') {
+                            updates.projectStatus = 'Contacted';
+                        }
+                        await FirebaseService.updateContact(contact.id, updates, user.email);
+                        updated++;
+                    }
+                    alert(`✅ Successfully updated ${updated} contacts!`);
+                } catch (error) {
+                    alert('Error updating contacts: ' + error.message);
+                }
+            };
+
             const exportToGoogleSheets = () => {
                 const headers = ['Church Name', 'Contact Name', 'Email', 'Phone', 'Address', 'State', 'Website', 'Status', 'Pricing', 'Contacted'];
                 const rows = contacts.map(c => [
@@ -857,6 +996,14 @@
                                     >
                                         <i className="fas fa-download"></i>
                                         Export
+                                    </button>
+                                    <button
+                                        onClick={updateEmailedContacts}
+                                        className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2"
+                                        title="Update already-emailed contacts to 'Contacted' status"
+                                    >
+                                        <i className="fas fa-sync"></i>
+                                        Fix Emailed
                                     </button>
                                     <button
                                         onClick={() => setShowAddContact(true)}
