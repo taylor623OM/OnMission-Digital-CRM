@@ -18,16 +18,24 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
         }
         .gradient-bg {
             background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         .status-badge {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
+            padding: 6px 14px;
+            border-radius: 16px;
             font-size: 12px;
             font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
+        }
+        .status-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
         .timeline-item {
             position: relative;
@@ -41,7 +49,7 @@
             top: 8px;
             bottom: -12px;
             width: 2px;
-            background: #e5e7eb;
+            background: linear-gradient(180deg, #DC7746 0%, #539CC3 100%);
         }
         .timeline-dot {
             position: absolute;
@@ -51,27 +59,83 @@
             height: 18px;
             border-radius: 50%;
             border: 3px solid white;
-            box-shadow: 0 0 0 2px #DC7746;
+            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
+            box-shadow: 0 2px 8px rgba(220, 119, 70, 0.3);
         }
         .card {
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(0,0,0,0.05);
+            background: white;
         }
         .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12) !important;
+            border-color: rgba(220, 119, 70, 0.2);
         }
+        
+        /* Dashboard Widget Enhancements */
+        .dashboard-widget {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .dashboard-widget::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #DC7746 0%, #539CC3 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .dashboard-widget:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        .dashboard-widget:hover::before {
+            opacity: 1;
+        }
+        
+        /* Icon Backgrounds with Gradients */
+        .icon-gradient-orange {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        }
+        .icon-gradient-green {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        }
+        .icon-gradient-blue {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+        .icon-gradient-purple {
+            background: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%);
+        }
+        .icon-gradient-red {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        }
+        .icon-gradient-gray {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        }
+        
         .sync-indicator {
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 8px 16px;
+            padding: 10px 18px;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
             display: flex;
             align-items: center;
             gap: 8px;
             z-index: 1000;
+            border: 1px solid rgba(0,0,0,0.05);
         }
         .sync-dot {
             width: 8px;
@@ -81,13 +145,15 @@
         }
         .sync-dot.connected {
             background: #10b981;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
         }
         .sync-dot.disconnected {
             background: #ef4444;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
         }
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.95); }
         }
         .login-container {
             min-height: 100vh;
@@ -100,14 +166,14 @@
             position: fixed;
             bottom: 30px;
             right: 30px;
-            width: 60px;
-            height: 60px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
             color: white;
             font-size: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 24px rgba(220, 119, 70, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 999;
             border: none;
             cursor: pointer;
@@ -116,8 +182,96 @@
             justify-content: center;
         }
         .quick-add-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 12px 32px rgba(220, 119, 70, 0.5);
+        }
+        
+        /* Button Enhancements */
+        .btn-primary {
+            background: linear-gradient(135deg, #DC7746 0%, #c96636 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #c96636 0%, #b85526 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 119, 70, 0.3);
+        }
+        
+        /* Smooth Scrolling */
+        * {
+            scroll-behavior: smooth;
+        }
+        
+        /* Phase 3: Profile Pictures & Enhanced Cards */
+        .profile-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: white;
+            background: linear-gradient(135deg, #DC7746 0%, #539CC3 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+        
+        .profile-circle-sm {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+        
+        /* Status Indicator Dots */
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .status-dot-overdue {
+            background: #ef4444;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+            animation: pulse-red 2s infinite;
+        }
+        
+        .status-dot-due-soon {
+            background: #f59e0b;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+        }
+        
+        .status-dot-active {
+            background: #10b981;
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+        
+        /* Enhanced Card Layout */
+        .contact-card-header {
+            display: flex;
+            gap: 12px;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+        
+        .contact-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .contact-card-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
         }
     </style>
 </head>
@@ -460,6 +614,25 @@
                 };
                 return colors[status] || 'bg-gray-100 text-gray-800';
             };
+            
+            const getInitials = (name) => {
+                if (!name) return '?';
+                const parts = name.trim().split(' ');
+                if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            };
+            
+            const getFollowUpStatus = (followUpDate) => {
+                if (!followUpDate) return null;
+                const dueDate = new Date(followUpDate);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const sevenDays = new Date(today.getTime() + 7*24*60*60*1000);
+                
+                if (dueDate < today) return 'overdue';
+                if (dueDate <= sevenDays) return 'due-soon';
+                return 'active';
+            };
 
             const getHistoryIcon = (type) => {
                 const icons = {
@@ -578,7 +751,7 @@
                     </div>
 
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
                             <div className="flex flex-wrap gap-4 items-center justify-between">
                                 <div className="flex-1 min-w-[300px]">
                                     <div className="relative">
@@ -633,29 +806,29 @@
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-                            <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition" onClick={() => setShowEmailCampaign(true)}>
+                            <div className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-md transition" onClick={() => setShowEmailCampaign(true)}>
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-gray-500 text-sm">Emails Queued</p>
                                     <p className="text-2xl font-bold text-gray-900">{emailQueue.length}</p>
                                 </div>
-                                <div className="bg-purple-100 rounded-full p-3">
+                                <div className="icon-gradient-purple rounded-full p-3 shadow-md">
                                     <i className="fas fa-envelope text-purple-600"></i>
                                 </div>
                             </div>
                         </div>
-                            <div className="bg-white rounded-lg shadow-sm p-4">
+                            <div className="dashboard-widget">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-gray-500 text-sm">Total Contacts</p>
                                         <p className="text-2xl font-bold text-gray-900">{contacts.length}</p>
                                     </div>
-                                    <div className="bg-orange-100 rounded-full p-3">
+                                    <div className="icon-gradient-orange rounded-full p-3 shadow-md">
                                         <i className="fas fa-church text-orange-600"></i>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white rounded-lg shadow-sm p-4">
+                            <div className="dashboard-widget">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-gray-500 text-sm">Active Projects</p>
@@ -663,12 +836,12 @@
                                             {contacts.filter(c => c.projectStatus === 'In Progress').length}
                                         </p>
                                     </div>
-                                    <div className="bg-green-100 rounded-full p-3">
+                                    <div className="icon-gradient-green rounded-full p-3 shadow-md">
                                         <i className="fas fa-tasks text-green-600"></i>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white rounded-lg shadow-sm p-4">
+                            <div className="dashboard-widget">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-gray-500 text-sm">New Leads</p>
@@ -676,11 +849,11 @@
                                             {contacts.filter(c => c.projectStatus === 'Lead').length}
                                         </p>
                                     </div>
-                                    <div className="bg-blue-100 rounded-full p-3">
+                                    <div className="icon-gradient-blue rounded-full p-3 shadow-md">
                                         <i className="fas fa-star text-blue-600"></i>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-lg shadow-sm p-4">
+                                <div className="dashboard-widget">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-gray-500 text-sm">Tasks Due</p>
@@ -694,7 +867,7 @@
                                             }).length}
                                         </p>
                                     </div>
-                                    <div className="bg-red-100 rounded-full p-3">
+                                    <div className="icon-gradient-red rounded-full p-3 shadow-md">
                                         <i className="fas fa-bell text-red-600"></i>
                                     </div>
                                 </div>
@@ -709,7 +882,7 @@
                                 </p>
                             </div>
                             </div>
-                            <div className="bg-white rounded-lg shadow-sm p-4">
+                            <div className="dashboard-widget">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-gray-500 text-sm">Completed</p>
@@ -717,15 +890,80 @@
                                             {contacts.filter(c => c.projectStatus === 'Completed').length}
                                         </p>
                                     </div>
-                                    <div className="bg-gray-100 rounded-full p-3">
+                                    <div className="icon-gradient-gray rounded-full p-3 shadow-md">
                                         <i className="fas fa-check text-gray-600"></i>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div className="dashboard-widget">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-500 text-sm">Pipeline Value</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            ${contacts.filter(c => c.projectStatus === 'In Progress' && c.projectRevenue)
+                                                .reduce((sum, c) => sum + (parseFloat(c.projectRevenue.replace(/[$,]/g, '')) || 0), 0)
+                                                .toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div className="icon-gradient-green rounded-full p-3 shadow-md">
+                                        <i className="fas fa-dollar-sign text-green-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="dashboard-widget">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-500 text-sm">Total Revenue</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            ${contacts.filter(c => c.projectStatus === 'Completed' && c.projectRevenue)
+                                                .reduce((sum, c) => sum + (parseFloat(c.projectRevenue.replace(/[$,]/g, '')) || 0), 0)
+                                                .toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div className="icon-gradient-blue rounded-full p-3 shadow-md">
+                                        <i className="fas fa-money-bill-wave text-blue-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="dashboard-widget">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-500 text-sm">Monthly Hosting</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            ${contacts.filter(c => c.monthlyHosting)
+                                                .reduce((sum, c) => sum + (parseFloat(c.monthlyHosting.replace(/[$,\/mo]/g, '')) || 0), 0)
+                                                .toLocaleString()}/mo
+                                        </p>
+                                    </div>
+                                    <div className="icon-gradient-purple rounded-full p-3 shadow-md">
+                                        <i className="fas fa-server text-purple-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="dashboard-widget">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-500 text-sm">Avg Deal Size</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            ${contacts.filter(c => c.projectRevenue).length > 0 
+                                                ? (contacts.filter(c => c.projectRevenue)
+                                                    .reduce((sum, c) => sum + (parseFloat(c.projectRevenue.replace(/[$,]/g, '')) || 0), 0) / 
+                                                    contacts.filter(c => c.projectRevenue).length).toFixed(0)
+                                                : 0}
+                                        </p>
+                                    </div>
+                                    <div className="icon-gradient-orange rounded-full p-3 shadow-md">
+                                        <i className="fas fa-chart-line text-yellow-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {contacts.length === 0 && (
-                            <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                            <div className="bg-white rounded-lg shadow-md p-12 text-center">
                                 <div className="text-gray-400 mb-4">
                                     <i className="fas fa-church text-6xl"></i>
                                 </div>
@@ -745,7 +983,7 @@
     view === 'kanban' ? (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {['Lead', 'Contacted', 'Waiting Info/Call', 'In Progress', 'Completed', 'On Hold'].map(status => (
-                <div key={status} className="bg-white rounded-lg shadow-sm p-4">
+                <div key={status} className="dashboard-widget">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="font-semibold text-gray-900">{status}</h3>
                         <span className={`status-badge ${getStatusColor(status)}`}>
@@ -770,34 +1008,56 @@
         </div>
     ) : view === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredContacts.map(contact => (
-                <div key={contact.id} className="bg-white rounded-lg shadow-sm p-6 card cursor-pointer" onClick={() => setSelectedContact(contact)}>
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">{contact.churchName}</h3>
-                            <p className="text-sm text-gray-600">{contact.contactName}</p>
+            {filteredContacts.map(contact => {
+                const followUpStatus = getFollowUpStatus(contact.followUpDate);
+                return (
+                <div key={contact.id} className="bg-white rounded-lg shadow-md p-6 card cursor-pointer" onClick={() => setSelectedContact(contact)}>
+                    <div className="contact-card-header">
+                        <div className="profile-circle">
+                            {getInitials(contact.contactName || contact.churchName)}
                         </div>
-                        <span className={`status-badge ${getStatusColor(contact.projectStatus)}`}>
-                            {contact.projectStatus}
-                        </span>
+                        <div className="contact-card-info">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                                <h3 className="text-lg font-semibold text-gray-900 flex-1 min-w-0">{contact.churchName}</h3>
+                                {followUpStatus && (
+                                    <div className={`status-dot status-dot-${followUpStatus}`} title={
+                                        followUpStatus === 'overdue' ? 'Overdue follow-up!' :
+                                        followUpStatus === 'due-soon' ? 'Follow-up due soon' : 'Active'
+                                    }></div>
+                                )}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{contact.contactName}</p>
+                            <div className="contact-card-meta">
+                                <span className={`status-badge status-badge-enhanced ${getStatusColor(contact.projectStatus)}`}>
+                                    {contact.projectStatus}
+                                </span>
+                                {contact.pricing && (
+                                    <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                                        {contact.pricing}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
                     <div className="space-y-2 text-sm">
                         <div className="flex items-center text-gray-600">
-                            <i className="fas fa-envelope w-5"></i>
+                            <i className="fas fa-envelope w-5 text-gray-400"></i>
                             <span className="ml-2 truncate">{contact.email}</span>
                         </div>
                         <div className="flex items-center text-gray-600">
-                            <i className="fas fa-phone w-5"></i>
+                            <i className="fas fa-phone w-5 text-gray-400"></i>
                             <span className="ml-2">{contact.phone}</span>
                         </div>
                         <div className="flex items-center text-gray-600">
-                            <i className="fas fa-map-marker-alt w-5"></i>
+                            <i className="fas fa-map-marker-alt w-5 text-gray-400"></i>
                             <span className="ml-2">{contact.state}</span>
                         </div>
-                        <div className="flex items-center text-gray-600">
-                            <i className="fas fa-dollar-sign w-5"></i>
-                            <span className="ml-2 font-semibold">{contact.pricing}</span>
-                        </div>
+                        {contact.followUpDate && (
+                            <div className="flex items-center text-gray-600">
+                                <i className="fas fa-calendar w-5 text-gray-400"></i>
+                                <span className="ml-2">Follow-up: {new Date(contact.followUpDate).toLocaleDateString()}</span>
+                            </div>
+                        )}
                     </div>
                     <div className="mt-4 pt-4 border-t flex items-center justify-between">
                         <span className={`text-xs font-medium ${contact.contacted ? 'text-green-600' : 'text-red-600'}`}>
@@ -809,10 +1069,11 @@
                         </span>
                     </div>
                 </div>
-            ))}
+                );
+            })}
         </div>
     ) : (
-        <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                     <tr>
@@ -1116,6 +1377,34 @@ We came across Anderson Baptist Association...
                                             )}
                                         </div>
                                         <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Project Revenue</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={editedContact.projectRevenue || ''}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, projectRevenue: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                    placeholder="$3,500"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900">{contact.projectRevenue || 'Not set'}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Hosting</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={editedContact.monthlyHosting || ''}
+                                                    onChange={(e) => setEditedContact({ ...editedContact, monthlyHosting: e.target.value })}
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                    placeholder="$25/mo"
+                                                />
+                                            ) : (
+                                                <p className="text-gray-900">{contact.monthlyHosting || 'Not set'}</p>
+                                            )}
+                                        </div>
+                                        <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Contacted</label>
                                             {isEditing ? (
                                                 <select
@@ -1249,7 +1538,10 @@ We came across Anderson Baptist Association...
                 websiteUrl: '',
                 projectStatus: 'Lead',
                 pricing: '',
-                contacted: false
+                contacted: false,
+                followUpDate: '',
+                monthlyHosting: '',
+                projectRevenue: ''
             });
 
             const handleSubmit = (e) => {
@@ -1376,6 +1668,26 @@ We came across Anderson Baptist Association...
                                         className="w-full px-3 py-2 border rounded-lg"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Project Revenue</label>
+                                    <input
+                                        type="text"
+                                        value={formData.projectRevenue || ''}
+                                        onChange={(e) => setFormData({ ...formData, projectRevenue: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        placeholder="$3,500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Hosting</label>
+                                    <input
+                                        type="text"
+                                        value={formData.monthlyHosting || ''}
+                                        onChange={(e) => setFormData({ ...formData, monthlyHosting: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg"
+                                        placeholder="$25/mo"
+                                    />
+                                </div>
                                 <div className="flex items-center">
                                     <input
                                         type="checkbox"
@@ -1441,7 +1753,7 @@ function ImportCSVModal({ onClose, onImport }) {
             websiteUrl: row[mapping.website] || '',
             projectStatus: 'Lead',
             pricing: '',
-            contacted: false
+            contacted: false,
             followUpDate: ''
         }));
 
@@ -1581,8 +1893,8 @@ function ImportCSVModal({ onClose, onImport }) {
 function EmailCampaignModal({ contacts, onClose, emailQueue, setEmailQueue, campaignSettings, setCampaignSettings }) {
     const [activeTab, setActiveTab] = useState('queue');
     const [emailTemplate, setEmailTemplate] = useState({
-    subject: 'OnMission Digital - {ChurchName} ',
-    body: `{ContactName},
+        subject: 'OnMission Digital - {ChurchName} ',
+        body: `{ContactName},
 
 Hope you are doing well!
 
@@ -1596,7 +1908,7 @@ We came across {ChurchName} and thought we'd reach out. If you or any churches i
 We'd love to hear what you might need and see if we can help, no pressure either way.
 
 We really appreciate the work you're doing, and we're here to support however we can.`
-});
+    });
     const [filterStatus, setFilterStatus] = useState('Lead');
 
     const addToQueue = () => {
@@ -1816,4 +2128,5 @@ We really appreciate the work you're doing, and we're here to support however we
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
+</html>
 </html>
