@@ -2017,21 +2017,26 @@ function ImportCSVModal({ onClose, onImport }) {
 function EmailCampaignModal({ contacts, onClose, emailQueue, setEmailQueue, campaignSettings, setCampaignSettings, gmailConnected, connectGmail, sendEmail }) {
     const [activeTab, setActiveTab] = useState('queue');
     const [emailTemplate, setEmailTemplate] = useState({
-        subject: 'OnMission Digital',
+        subject: 'OnMission Digital - {ChurchName}',
         body: `{ContactName},
 
-Hope you are doing well!
+I hope you're doing well.
 
-We've been helping churches and church plants get their digital presence up and running without the usual price tag. After seeing too many smaller congregations and associations either go without a website or get locked into expensive contracts, we decided to offer these services at cost, covering just our operational expenses so churches can focus their resources on ministry.
+I wanted to reach out after coming across {ChurchName}. Over the past year, we've been quietly helping a handful of churches and church plants get simple, solid websites and online giving set up without stretching their budgets. We started doing this after noticing how many smaller churches either go without a web presence or feel stuck in expensive contracts.
 
-We we'd reach out. If you or any churches in your network need a website or giving platform set up, we'd love to help. Here are some recent build outs we have done:
-- King's Cross: https://steveb734.sg-host.com/
-- Mission Vida: https://missionvida.org
-- Echo KY: https://echoky.org
+There's no agenda here. We just wanted to introduce ourselves in case it's ever helpful, whether for your church or others you're connected with.
 
-We'd love to hear what you might need and see if we can help, no pressure either way.
+For context, here are a couple of recent projects:
 
-We really appreciate the work you're doing, and we're here to support however we can.`
+* Mission Vida: https://missionvida.org
+* Echo KY: https://echoky.org
+
+If a conversation would be useful at any point, we'd be glad to connect. And if not, we're still grateful for the work you're doing and are cheering you on.
+
+Gratefully,
+
+Taylor Ezell
+OnMission Digital`
     });
     const [filterStatus, setFilterStatus] = useState('Lead');
 
