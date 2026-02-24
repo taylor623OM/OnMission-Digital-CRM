@@ -517,8 +517,23 @@
             const [showImportCSV, setShowImportCSV] = useState(false);
             const [emailQueue, setEmailQueue] = useState([]);
             const [campaignSettings, setCampaignSettings] = useState({ dailyLimit: 25, sendTime: '09:00', enabled: false });
-            const [gmailAccessToken, setGmailAccessToken] = useState(null);
-            const [gmailConnected, setGmailConnected] = useState(false);
+            const [gmailAccessToken, setGmailAccessToken] = useState(() => {
+                return localStorage.getItem('gmailToken') || null;
+            });
+            const [gmailConnected, setGmailConnected] = useState(() => {
+                return localStorage.getItem('gmailToken') !== null;
+            });
+
+            // Save token to localStorage when it changes
+            useEffect(() => {
+                if (gmailAccessToken) {
+                    localStorage.setItem('gmailToken', gmailAccessToken);
+                    localStorage.setItem('gmailTokenTime', Date.now().toString());
+                } else {
+                    localStorage.removeItem('gmailToken');
+                    localStorage.removeItem('gmailTokenTime');
+                }
+            }, [gmailAccessToken]);
 
             useEffect(() => {
                 const unsubscribe = FirebaseService.subscribeToContacts((updatedContacts) => {
@@ -703,7 +718,6 @@
 
                 try {
                     const email = [
-                        `From: Taylor Ezell <${user.email}>`,
                         `To: ${to}`,
                         `Subject: ${subject}`,
                         'Content-Type: text/plain; charset=utf-8',
@@ -738,13 +752,16 @@
                                 : q
                         ));
                         
+                        alert('✅ Email sent successfully!');
                         return true;
                     } else {
-                        throw new Error('Failed to send email');
+                        const errorData = await response.json();
+                        console.error('Gmail API error:', errorData);
+                        throw new Error(errorData.error?.message || 'Failed to send email');
                     }
                 } catch (error) {
                     console.error('Error sending email:', error);
-                    alert('Failed to send email. Please try again.');
+                    alert('❌ Failed to send email: ' + error.message + '\n\nTry reconnecting Gmail.');
                     return false;
                 }
             };
@@ -2000,15 +2017,15 @@ function ImportCSVModal({ onClose, onImport }) {
 function EmailCampaignModal({ contacts, onClose, emailQueue, setEmailQueue, campaignSettings, setCampaignSettings, gmailConnected, connectGmail, sendEmail }) {
     const [activeTab, setActiveTab] = useState('queue');
     const [emailTemplate, setEmailTemplate] = useState({
-        subject: 'OnMission Digital - {ChurchName} ',
+        subject: 'OnMission Digital',
         body: `{ContactName},
 
 Hope you are doing well!
 
 We've been helping churches and church plants get their digital presence up and running without the usual price tag. After seeing too many smaller congregations and associations either go without a website or get locked into expensive contracts, we decided to offer these services at cost, covering just our operational expenses so churches can focus their resources on ministry.
 
-We came across {ChurchName} and thought we'd reach out. If you or any churches in your network need a website or giving platform set up, we'd love to help. Here are some recent build outs we have done:
-
+We we'd reach out. If you or any churches in your network need a website or giving platform set up, we'd love to help. Here are some recent build outs we have done:
+- King's Cross: https://steveb734.sg-host.com/
 - Mission Vida: https://missionvida.org
 - Echo KY: https://echoky.org
 
